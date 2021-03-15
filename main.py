@@ -22,6 +22,73 @@ dff=cursor.fetchall()
 old_data=df.to_dict('records')
 app = dash.Dash()
 
+
+
+@app.callback(Output('editing-prune-data-output', 'active_cell'),
+              [Input('editing-prune-data', 'data'),
+              Input('editing-prune-data', 'active_cell')])
+
+def display_output(rows,active_cell):
+
+    if active_cell:
+     active_row=active_cell["row"]
+     pruned_rows = []
+     i=0
+     for row in rows:
+        i+=1
+        # require that all elements in a row are specified
+        # the pruning behavior that you need may be different than this
+        active_cell
+        if all([cell != '' for cell in row.values()]):
+
+           pruned_rows.append(row)
+
+           if active_cell["column_id"]=="warehouse1":
+
+              if str(old_data[i-1]["warehouse1"])=='nan':
+                if i==(active_row):
+                    if str(row["warehouse1"]) !='None':
+                      cursor.execute("insert into warehouse1(good_id,good_count) values (%s,%s)",
+                           (str(row["id"]), (str(row["warehouse1"]))))
+                      db_connect.commit()
+              elif str(old_data[i-1]["warehouse1"])!='nan':
+                  if i == (active_row):
+                      if str(row["warehouse1"]) !='None':
+                        cursor.execute("update warehouse1 set good_count=%s where good_id=%s",
+                                   ( (str(row["warehouse1"])),str(row["id"])))
+                        db_connect.commit()
+           elif active_cell["column_id"]=="warehouse2":
+                if str(old_data[i - 1]["warehouse2"]) == 'nan':
+                    if i == (active_row):
+                        if str(row["warehouse2"]) !='None':
+                          cursor.execute("insert into warehouse2(good_id,good_count) values (%s,%s)",
+                                       (str(row["id"]), (str(row["warehouse2"]))))
+                          db_connect.commit()
+                elif str(old_data[i - 1]["warehouse2"]) != 'nan':
+                    if i == (active_row):
+                        if str(row["warehouse2"]) !='None':
+                          cursor.execute("update warehouse2 set good_count=%s where good_id=%s",
+                                       ((str(row["warehouse2"])), str(row["id"])))
+                          db_connect.commit()
+           elif active_cell["column_id"]=="priority":
+                    if i == (active_row):
+                        if str(row["priority"]) !='None':
+                          cursor.execute("update goods set priority=%s where id=%s",
+                                       ((str(row["priority"])), str(row["id"])))
+                          db_connect.commit()
+           else:
+
+                break
+
+     return html.Div([
+        html.Div('Raw Data'),
+        html.Pre(pprint.pformat(rows)),
+        html.Hr(),
+        html.Div('Pruned Data'),
+        html.Pre(pprint.pformat(pruned_rows)),
+
+        ])
+
 def discrete_background_color_bins(df, n_bins=5, columns='all'):
     import colorlover
     bounds = [i * (1.0 / n_bins) for i in range(n_bins + 1)]
@@ -55,9 +122,13 @@ def discrete_background_color_bins(df, n_bins=5, columns='all'):
                     ).format(column=column, min_bound=min_bound, max_bound=max_bound),
                     'column_id': column
                 },
+
                 'backgroundColor': backgroundColor,
-                'color': color
-            })
+                'color': color,
+
+            },
+
+            )
         legend.append(
             html.Div(style={'display': 'inline-block', 'width': '60px'}, children=[
                 html.Div(
@@ -73,6 +144,8 @@ def discrete_background_color_bins(df, n_bins=5, columns='all'):
 
     return (styles, html.Div(legend, style={'padding': '5px 0 5px 0'}))
 
+
+
 (styles, legend) = discrete_background_color_bins(df, columns=['priority'])
 
 
@@ -84,14 +157,13 @@ app.layout = html.Div([
     html.Div(id='output-state'),
     dash_table.DataTable(
         data=df.to_dict('records'),
+
         editable=True,
         sort_action='native',
         id='editing-prune-data',
         selected_rows=[],
         columns=[{'name': i, 'id': i} for i in df.columns],
-        style_data_conditional=[styles,
-                                {'if': {'state': 'active'}, 'backgroundColor': 'rgba(0, 116, 217, 0.3)',
-                                 'border': '1px solid rgb(0, 116, 217)'}],
+        style_data_conditional=styles,
         style_cell={
         'textAlign': 'left',
         },
@@ -102,56 +174,6 @@ app.layout = html.Div([
 ])
 
 
-
-@app.callback(Output('editing-prune-data-output', 'active_cell'),
-              [Input('editing-prune-data', 'data'),
-              Input('editing-prune-data', 'active_cell')])
-
-def display_output(rows,active_cell):
-    if active_cell:
-     active_row=active_cell["row"]
-     pruned_rows = []
-     i=0
-     for row in rows:
-        i+=1
-        # require that all elements in a row are specified
-        # the pruning behavior that you need may be different than this
-
-        if all([cell != '' for cell in row.values()]):
-
-            pruned_rows.append(row)
-            if active_cell["column_id"]=="warehouse1":
-              if str(old_data[i-1]["warehouse1"])=='nan':
-                if i==(active_row):
-                 cursor.execute("insert into warehouse1(good_id,good_count) values (%s,%s)",
-                           (str(row["id"]), (str(row["warehouse1"]))))
-                 db_connect.commit()
-              elif str(old_data[i-1]["warehouse1"])!='nan':
-                  if i == (active_row):
-                      cursor.execute("update warehouse1 set good_count=%s where good_id=%s",
-                                   ( (str(row["warehouse1"])),str(row["id"])))
-                      db_connect.commit()
-            elif active_cell["column_id"]=="warehouse2":
-                if str(old_data[i - 1]["warehouse2"]) == 'nan':
-                    if i == (active_row):
-                        cursor.execute("insert into warehouse1(good_id,good_count) values (%s,%s)",
-                                       (str(row["id"]), (str(row["warehouse2"]))))
-                        db_connect.commit()
-                elif str(old_data[i - 1]["warehouse2"]) != 'nan':
-                    if i == (active_row):
-                        cursor.execute("update warehouse2 set good_count=%s where good_id=%s",
-                                       ((str(row["warehouse2"])), str(row["id"])))
-                        db_connect.commit()
-
-
-     return html.Div([
-        html.Div('Raw Data'),
-        html.Pre(pprint.pformat(rows)),
-        html.Hr(),
-        html.Div('Pruned Data'),
-        html.Pre(pprint.pformat(pruned_rows)),
-        ])
-
-
 if __name__ == '__main__':
+
     app.run_server(debug=False)
