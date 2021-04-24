@@ -18,18 +18,9 @@ from connect_sql import Sql
 import dash_auth
 import plotly
 import login
-import flask
+import url_bar_and_content_div
 db=Sql()
 df= pd.read_sql("select goods.id,name,w.good_count as warehouse1,w22.good_count as warehouse2,priority from goods left join warehouse1 w on goods.id = w.good_id left join warehouse2 w22 on goods.id = w22.good_id ",db.db_connect)
-db.cursor.execute("select goods.id,name,w.good_count as warehouse1,w22.good_count as warehouse2,priority from goods left join warehouse1 w on goods.id = w.good_id left join warehouse2 w22 on goods.id = w22.good_id; ")
-dff=db.cursor.fetchall()
-old_data=df.to_dict('records')
-
-
-url_bar_and_content_div = html.Div([
-    dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content'),
-])
 
 @login.app.callback(Output('editing-prune-data-output', 'active_cell'),
               [Input('editing-prune-data', 'data'),
@@ -156,93 +147,3 @@ def discrete_background_color_bins(df, n_bins=5, columns='all'):
 
 
 (styles, legend) = discrete_background_color_bins(df, columns=['priority'])
-
-layout_page_1 = html.Div([
-legend,
-    html.H2('Page 1'),
-
-    html.Div(id='output-state'),
-    dash_table.DataTable(
-        data=df.to_dict('records'),
-
-        editable=True,
-        sort_action='native',
-        id='editing-prune-data',
-        selected_rows=[],
-        columns=[{'name': i, 'id': i} for i in df.columns],
-        style_data_conditional=styles,
-        style_cell={
-            'textAlign': 'left',
-        },
-        row_deletable=True
-    ),
-    html.Div(id='editing-prune-data-output'),
-
-    html.Button('Add Row', id='editing-rows-button', n_clicks=0),
-
-    html.Br(),
-    dcc.Link('Navigate to "/"', href='/'),
-    html.Br(),
-    dcc.Link('Navigate to "/page-2"', href='/page-2'),
-
-])
-
-layout_page_2 = html.Div([
-    html.H2('Page 2'),
-    dcc.Dropdown(
-        id='page-2-dropdown',
-        options=[{'label': i, 'value': i} for i in ['LA', 'NYC', 'MTL']],
-        value='LA'
-    ),
-    html.Div(id='page-2-display-value'),
-    html.Br(),
-    dcc.Link('Navigate to "/"', href='/'),
-    html.Br(),
-    dcc.Link('Navigate to "/page-1"', href='/page-1'),
-])
-
-# index layout
-login.app.layout = url_bar_and_content_div
-
-# "complete" layout
-login.app.validation_layout = html.Div([
-    url_bar_and_content_div,
-    layout_page_1,
-    layout_page_2,
-])
-
-
-@login.app.callback(Output('page-content', 'children'),
-              Input('url', 'pathname'),)
-
-def display_page(pathname):
-        return layout_page_1
-
-
-
-
-
-# Page 1 callbacks
-# @app.callback(Output('output-state', 'children'),
-#               Input('button-login', 'n_clicks'),
-#               State('input-on-submit1', 'value'),
-#               State('input-on-submit1', 'value'))
-# def update_output(n_clicks, input1, input2):
-#     if n_clicks>=1 and input1=='hello' and input2=='world':
-#         return layout_page_1
-#     else:
-#         return layout_index
-
-
-
-# Page 2 callbacks
-@login.app.callback(Output('page-2-display-value', 'children'),
-              Input('page-2-dropdown', 'value'))
-def display_value(value):
-    print('display_value')
-    return 'You have selected "{}"'.format(value)
-
-
-if __name__ == '__main__':
-
-    login.app.run_server(debug=True)
